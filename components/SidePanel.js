@@ -78,7 +78,12 @@ export default function SidePanel({
           <input
             type="checkbox"
             checked={state.nsaid}
-            onChange={(e) => setState((s) => ({ ...s, nsaid: e.target.checked }))}
+            onChange={(e) => {
+  const id = e.target.value;
+  const p = PRESETS.find((x) => x.id === id);
+  if (p) setState((s) => ({ ...s, presetId: id, ...p.state }));
+  e.target.value = "";
+}}
           />
           <label>NSAID on (dampen prostaglandins)</label>
         </div>
