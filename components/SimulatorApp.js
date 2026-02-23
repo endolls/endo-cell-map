@@ -6,21 +6,28 @@ import CellScene from "./CellScene";
 import SidePanel from "./SidePanel";
 import { computeModel } from "../lib/rules";
 
-const STORAGE_KEY = "endo_cell_map_state_v1";
+const STORAGE_KEY = "endo_cell_map_state_v2";
 
 const DEFAULT_STATE = {
   estrogen: 0.25,
   hypoxia: 0.15,
   m2: 0.25,
   progesteroneResistance: false,
-  arid1aLoss: false
+  arid1aLoss: false,
+
+  // NEW: explicit user inputs
+  il6Drive: 0.15,
+  tnfDrive: 0.10,
+  il1bDrive: 0.10,
+  pge2Input: 0.10,
+  pgf2aInput: 0.10,
+  nsaid: false
 };
 
 export default function SimulatorApp() {
   const [state, setState] = useState(DEFAULT_STATE);
   const [selectedPartId, setSelectedPartId] = useState(null);
 
-  // Load from localStorage (optional)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -29,7 +36,6 @@ export default function SimulatorApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save to localStorage (optional)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -51,10 +57,10 @@ export default function SimulatorApp() {
       <div className="canvasCard">
         <div className="canvasTopHint">
           <div className="hintPill">
-            Click an organelle to explore. Drag to rotate. Scroll to zoom.
+            Click an organelle. Drag to rotate. Scroll to zoom.
           </div>
           <div className="hintPill">
-            “Lit” parts reflect the current sliders/toggles (educational rules engine).
+            Sliders “push” cytokines/prostaglandins → cell highlights + outcome shifts.
           </div>
         </div>
 
