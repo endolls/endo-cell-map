@@ -6,7 +6,7 @@ import CellScene from "./CellScene";
 import SidePanel from "./SidePanel";
 import { computeModel } from "../lib/rules";
 
-const STORAGE_KEY = "endo_cell_map_state_v2";
+const STORAGE_KEY = "endo_cell_map_state_v3";
 
 const DEFAULT_STATE = {
   estrogen: 0.25,
@@ -15,13 +15,15 @@ const DEFAULT_STATE = {
   progesteroneResistance: false,
   arid1aLoss: false,
 
-  // NEW: explicit user inputs
   il6Drive: 0.15,
-  tnfDrive: 0.10,
-  il1bDrive: 0.10,
-  pge2Input: 0.10,
-  pgf2aInput: 0.10,
-  nsaid: false
+  tnfDrive: 0.1,
+  il1bDrive: 0.1,
+  pge2Input: 0.1,
+  pgf2aInput: 0.1,
+  nsaid: false,
+
+  // NEW: visuals toggle
+  visualFX: true
 };
 
 export default function SimulatorApp() {
@@ -60,15 +62,17 @@ export default function SimulatorApp() {
             Click an organelle. Drag to rotate. Scroll to zoom.
           </div>
           <div className="hintPill">
-            Sliders “push” cytokines/prostaglandins → cell highlights + outcome shifts.
+            Receptor glow + cytokine clouds + vessel sprouting + fibrosis thickening.
           </div>
         </div>
 
         <WebGLGuard>
           <CellScene
+            model={model}
             highlights={model.highlights}
             selectedId={selectedPartId}
             onSelect={(id) => setSelectedPartId(id)}
+            visualFX={!!state.visualFX}
           />
         </WebGLGuard>
       </div>
