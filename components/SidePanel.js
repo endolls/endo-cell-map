@@ -83,7 +83,16 @@ export default function SidePanel({
           <label>NSAID on (dampen prostaglandins)</label>
         </div>
       </div>
-
+<div className="panelRow">
+  <div className="toggle">
+    <input
+      type="checkbox"
+      checked={state.visualFX}
+      onChange={(e) => setState((s) => ({ ...s, visualFX: e.target.checked }))}
+    />
+    <label>Visual FX (particles / glow / animations)</label>
+  </div>
+</div>
       <hr className="sep" />
 
       <h2>Preset</h2>
