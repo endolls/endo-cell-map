@@ -13,57 +13,30 @@ export default function SidePanel({
 }) {
   const selected = PARTS.find((p) => p.id === selectedPartId) || null;
 
+  const slider = (key, label) => (
+    <div className="panelRow">
+      <label>{label}</label>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={state[key]}
+        onChange={(e) => setState((s) => ({ ...s, [key]: +e.target.value }))}
+      />
+      <div className="kv">
+        <div className="k">Level</div>
+        <div className="v">{Number(state[key]).toFixed(2)}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="panel">
-      <h2>Controls</h2>
-
-      <div className="panelRow">
-        <label>Estrogen spike</label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={state.estrogen}
-          onChange={(e) => setState((s) => ({ ...s, estrogen: +e.target.value }))}
-        />
-        <div className="kv">
-          <div className="k">Level</div>
-          <div className="v">{state.estrogen.toFixed(2)}</div>
-        </div>
-      </div>
-
-      <div className="panelRow">
-        <label>Hypoxia</label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={state.hypoxia}
-          onChange={(e) => setState((s) => ({ ...s, hypoxia: +e.target.value }))}
-        />
-        <div className="kv">
-          <div className="k">Level</div>
-          <div className="v">{state.hypoxia.toFixed(2)}</div>
-        </div>
-      </div>
-
-      <div className="panelRow">
-        <label>Macrophage M2 shift</label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={state.m2}
-          onChange={(e) => setState((s) => ({ ...s, m2: +e.target.value }))}
-        />
-        <div className="kv">
-          <div className="k">Level</div>
-          <div className="v">{state.m2.toFixed(2)}</div>
-        </div>
-      </div>
+      <h2>Core Drivers</h2>
+      {slider("estrogen", "Estrogen spike")}
+      {slider("hypoxia", "Hypoxia")}
+      {slider("m2", "Macrophage M2 shift")}
 
       <div className="panelRow">
         <div className="toggle">
@@ -76,6 +49,7 @@ export default function SidePanel({
           />
           <label>Progesterone resistance</label>
         </div>
+
         <div className="toggle">
           <input
             type="checkbox"
@@ -86,19 +60,46 @@ export default function SidePanel({
         </div>
       </div>
 
+      <hr className="sep" />
+
+      <h2>Inflammatory Inputs</h2>
+      <div className="small">
+        These sliders are “user pushes” to explore how cytokines and prostaglandins
+        shift the educational model (not a clinical prediction).
+      </div>
+      {slider("il6Drive", "IL-6 drive")}
+      {slider("tnfDrive", "TNF-α drive")}
+      {slider("il1bDrive", "IL-1β drive")}
+      {slider("pge2Input", "PGE2 input")}
+      {slider("pgf2aInput", "PGF2α input")}
+
       <div className="panelRow">
-        <label>Preset</label>
+        <div className="toggle">
+          <input
+            type="checkbox"
+            checked={state.nsaid}
+            onChange={(e) => setState((s) => ({ ...s, nsaid: e.target.checked }))}
+          />
+          <label>NSAID on (dampen prostaglandins)</label>
+        </div>
+      </div>
+
+      <hr className="sep" />
+
+      <h2>Preset</h2>
+      <div className="panelRow">
+        <label>Choose…</label>
         <select
           value=""
           onChange={(e) => {
             const id = e.target.value;
             const p = PRESETS.find((x) => x.id === id);
-            if (p) setState({ ...p.state });
+            if (p) setState((s) => ({ ...s, ...p.state }));
             e.target.value = "";
           }}
         >
           <option value="" disabled>
-            Choose…
+            Select…
           </option>
           {PRESETS.map((p) => (
             <option key={p.id} value={p.id}>
@@ -117,18 +118,14 @@ export default function SidePanel({
 
       <h2>Selection</h2>
       {selected ? (
-        <>
-          <div className="kv">
-            <div className="k">Part</div>
-            <div className="v">{selected.label}</div>
-            <div className="k">Pathways</div>
-            <div className="v">{selected.pathways.join(", ")}</div>
-          </div>
-        </>
-      ) : (
-        <div className="small">
-          Click an organelle/feature in the 3D cell to see its pathway context.
+        <div className="kv">
+          <div className="k">Part</div>
+          <div className="v">{selected.label}</div>
+          <div className="k">Pathways</div>
+          <div className="v">{selected.pathways.join(", ")}</div>
         </div>
+      ) : (
+        <div className="small">Click an organelle in the 3D cell.</div>
       )}
 
       <hr className="sep" />
@@ -143,6 +140,15 @@ export default function SidePanel({
 
       <hr className="sep" />
 
+      <h2>Mediators (0–100)</h2>
+      <Bar label="IL-6" value={model.mediators.IL6} />
+      <Bar label="TNF-α" value={model.mediators.TNF} />
+      <Bar label="IL-1β" value={model.mediators.IL1B} />
+      <Bar label="PGE2" value={model.mediators.PGE2} />
+      <Bar label="PGF2α" value={model.mediators.PGF2A} />
+
+      <hr className="sep" />
+
       <h2>Gene markers (0–100)</h2>
       <Bar label="ESR1 (ERα)" value={model.genes.ESR1} />
       <Bar label="ESR2 (ERβ)" value={model.genes.ESR2} />
@@ -150,8 +156,6 @@ export default function SidePanel({
       <Bar label="HIF1A" value={model.genes.HIF1A} />
       <Bar label="VEGFA" value={model.genes.VEGFA} />
       <Bar label="PTGS2 (COX-2)" value={model.genes.PTGS2} />
-      <Bar label="IL6" value={model.genes.IL6} />
-      <Bar label="TNF" value={model.genes.TNF} />
       <Bar label="TGFB1" value={model.genes.TGFB1} />
       <Bar label="COL1A1" value={model.genes.COL1A1} />
       <Bar label="NGF" value={model.genes.NGF} />
@@ -170,16 +174,8 @@ export default function SidePanel({
           ))}
         </div>
       ) : (
-        <div className="small">No pathways currently “lit up” by the model.</div>
+        <div className="small">No pathways currently “lit up.”</div>
       )}
-
-      <hr className="sep" />
-
-      <div className="small">
-        <strong>Note:</strong> This is a simplified educational rules engine. It’s
-        meant to help customers visualize relationships, not to produce
-        clinically valid predictions.
-      </div>
     </div>
   );
 }
