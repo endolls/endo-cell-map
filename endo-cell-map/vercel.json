@@ -1,3 +1,4 @@
 {
-  "rootDirectory": "endo-cell-map"
+  "buildCommand": "npm run build || true",
+  "outputDirectory": "."
 }
