@@ -298,3 +298,76 @@ button:hover { background: rgba(255,255,255,0.10); }
 .scenarioText { font-size: 12px; color: rgba(168,176,198,0.95); margin-top: 6px; line-height: 1.35; }
 .scenarioList { margin: 8px 0 0 16px; color: rgba(168,176,198,0.95); font-size: 12px; }
 .scenarioList li { margin: 4px 0; }
+
+/* --- Scenario Chat (customer-friendly guide) --- */
+.chatWrap {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatBtn {
+  pointer-events: auto;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.35);
+  color: rgba(230,233,242,0.95);
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.chatBtn:hover { background: rgba(0,0,0,0.45); }
+
+.chatCard {
+  width: min(420px, calc(100vw - 28px));
+  max-height: 55vh;
+  overflow: auto;
+  pointer-events: auto;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(10, 12, 18, 0.55);
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chatBubble {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.chatBubble.system {
+  border-color: rgba(255,255,255,0.12);
+}
+
+.chatBubble.preset {
+  border-color: rgba(255, 80, 80, 0.25);
+  background: rgba(255, 80, 80, 0.06);
+}
+
+.chatBubble.tip {
+  border-color: rgba(96, 165, 250, 0.25);
+  background: rgba(96, 165, 250, 0.06);
+}
+
+.chatText {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(230,233,242,0.95);
+}
+
+.chatMeta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(168,176,198,0.95);
+}
