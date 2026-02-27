@@ -10,14 +10,7 @@ function clamp01(x) {
   return Math.max(0, Math.min(1, n));
 }
 
-function Clickable({
-  id,
-  label,
-  selected,
-  onSelect,
-  tooltipPos,
-  children
-}) {
+function Clickable({ id, label, selected, onSelect, tooltipPos, children }) {
   const [hovered, setHovered] = useState(false);
   useCursor(hovered);
 
@@ -59,16 +52,15 @@ function Clickable({
   );
 }
 
-function emissiveIntensity(hovered, selected, active, base = 0.08) {
+function emissiveIntensity(hovered, selected, active, base = 0.06) {
   if (selected) return 1.2;
-  if (hovered) return 0.9;
+  if (hovered) return 0.95;
   if (active) return 0.85;
   return base;
 }
 
 function ParticleCloud({ enabled, origin, targets, strength, baseColor, count = 850, bounds = 7 }) {
   const geomRef = useRef(null);
-  const tRef = useRef(0);
   const spawnAcc = useRef(0);
 
   const data = useMemo(() => {
@@ -112,7 +104,6 @@ function ParticleCloud({ enabled, origin, targets, strength, baseColor, count = 
   useFrame((_, dt) => {
     if (!enabled || !geomRef.current) return;
 
-    tRef.current += dt;
     const s = clamp01(strength);
 
     const spawnPerSecond = 25 + 160 * s;
@@ -122,7 +113,10 @@ function ParticleCloud({ enabled, origin, targets, strength, baseColor, count = 
       spawnAcc.current -= 1;
       let idx = -1;
       for (let i = 0; i < count; i++) {
-        if (data.life[i] <= 0) { idx = i; break; }
+        if (data.life[i] <= 0) {
+          idx = i;
+          break;
+        }
       }
       if (idx >= 0) spawnOne(idx, s);
       else break;
@@ -162,7 +156,10 @@ function ParticleCloud({ enabled, origin, targets, strength, baseColor, count = 
         let bestD = tmpPos.distanceToSquared(nearest);
         for (let j = 1; j < targetVs.length; j++) {
           const d = tmpPos.distanceToSquared(targetVs[j]);
-          if (d < bestD) { bestD = d; nearest = targetVs[j]; }
+          if (d < bestD) {
+            bestD = d;
+            nearest = targetVs[j];
+          }
         }
         tmpDir.copy(nearest).sub(tmpPos);
         const dist = Math.max(0.001, tmpDir.length());
@@ -217,33 +214,27 @@ function ParticleCloud({ enabled, origin, targets, strength, baseColor, count = 
   return (
     <points>
       <primitive object={geometry} ref={geomRef} attach="geometry" />
-      <pointsMaterial
-        size={0.05}
-        sizeAttenuation
-        vertexColors
-        transparent
-        opacity={0.95}
-        depthWrite={false}
-      />
+      <pointsMaterial size={0.05} sizeAttenuation vertexColors transparent opacity={0.95} depthWrite={false} />
     </points>
   );
 }
 
-function VesselTube({ basePos = [2.1, -0.35, 0.05], dir = [1, 1, 0], growth = 0.3, radius = 0.09, color = "#60a5fa" }) {
+function VesselTube({ basePos, dir, growth, radius, color }) {
   const meshRef = useRef(null);
 
   const { geom, idxCount } = useMemo(() => {
     const a = new THREE.Vector3(...basePos);
     const d = new THREE.Vector3(...dir).normalize();
 
+    // longer, more “vessel-like” curve
     const curve = new THREE.CatmullRomCurve3([
       a.clone(),
-      a.clone().add(d.clone().multiplyScalar(0.35)).add(new THREE.Vector3(0.0, 0.1, 0.0)),
-      a.clone().add(d.clone().multiplyScalar(0.75)).add(new THREE.Vector3(0.08, 0.25, -0.05)),
-      a.clone().add(d.clone().multiplyScalar(1.15)).add(new THREE.Vector3(0.15, 0.55, -0.10))
+      a.clone().add(d.clone().multiplyScalar(0.6)).add(new THREE.Vector3(0.0, 0.12, 0.0)),
+      a.clone().add(d.clone().multiplyScalar(1.25)).add(new THREE.Vector3(0.12, 0.35, -0.08)),
+      a.clone().add(d.clone().multiplyScalar(2.1)).add(new THREE.Vector3(0.22, 0.75, -0.18))
     ]);
 
-    const g = new THREE.TubeGeometry(curve, 220, radius, 12, false);
+    const g = new THREE.TubeGeometry(curve, 260, radius, 14, false);
     const count = g.index ? g.index.count : g.attributes.position.count;
     return { geom: g, idxCount: count };
   }, [basePos, dir, radius]);
@@ -260,10 +251,10 @@ function VesselTube({ basePos = [2.1, -0.35, 0.05], dir = [1, 1, 0], growth = 0.
       <meshStandardMaterial
         color={color}
         roughness={0.35}
-        emissive={"#ff2a2a"}
-        emissiveIntensity={0.12}
+        emissive="#ff2a2a"
+        emissiveIntensity={0.10}
         transparent
-        opacity={0.95}
+        opacity={0.98}
       />
     </mesh>
   );
@@ -271,37 +262,36 @@ function VesselTube({ basePos = [2.1, -0.35, 0.05], dir = [1, 1, 0], growth = 0.
 
 function AdhesionScaffold({ amount = 0.0 }) {
   const groupRef = useRef(null);
-  const seeded = useMemo(() => {
-    const sticks = [];
-    for (let i = 0; i < 36; i++) {
-      // cluster on fibrosis side (-x)
-      const x = -2.4 - Math.random() * 0.6;
-      const y = (Math.random() - 0.5) * 1.6;
-      const z = (Math.random() - 0.5) * 1.2;
-      const len = 0.6 + Math.random() * 1.2;
+  const sticks = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 38; i++) {
+      const x = -2.35 - Math.random() * 0.75;
+      const y = (Math.random() - 0.5) * 1.8;
+      const z = (Math.random() - 0.5) * 1.3;
+      const len = 0.65 + Math.random() * 1.35;
       const rot = [Math.random() * 1.2, Math.random() * 1.2, Math.random() * 1.2];
-      sticks.push({ p: [x, y, z], len, rot });
+      out.push({ p: [x, y, z], len, rot });
     }
-    return sticks;
+    return out;
   }, []);
 
   useFrame((_, dt) => {
     if (!groupRef.current) return;
     const a = clamp01(amount);
-    groupRef.current.scale.set(0.55 + 1.8 * a, 0.35 + 1.6 * a, 0.55 + 1.8 * a);
+    groupRef.current.scale.set(0.55 + 1.9 * a, 0.35 + 1.7 * a, 0.55 + 1.9 * a);
     groupRef.current.rotation.y += dt * (0.05 * a);
   });
 
   return (
     <group ref={groupRef}>
-      {seeded.map((s, i) => (
+      {sticks.map((s, i) => (
         <mesh key={i} position={s.p} rotation={s.rot}>
           <cylinderGeometry args={[0.03, 0.03, s.len, 12]} />
           <meshStandardMaterial
             color="#fbbf24"
-            roughness={0.8}
+            roughness={0.82}
             emissive="#ff2a2a"
-            emissiveIntensity={0.10}
+            emissiveIntensity={0.08}
             transparent
             opacity={0.9}
           />
@@ -311,45 +301,20 @@ function AdhesionScaffold({ amount = 0.0 }) {
   );
 }
 
-function PainHalo({ strength = 0.0 }) {
-  const ref = useRef(null);
-  useFrame((_, dt) => {
-    if (!ref.current) return;
-    const s = clamp01(strength);
-    ref.current.rotation.z += dt * (0.6 + 1.6 * s);
-    const p = 1 + 0.08 * Math.sin(Date.now() / 180) * s;
-    ref.current.scale.set(p, p, p);
-  });
-
-  return (
-    <mesh ref={ref} position={[0, 0, 0]}>
-      <torusGeometry args={[2.35, 0.06, 16, 80]} />
-      <meshStandardMaterial
-        color="#ff2a2a"
-        roughness={0.2}
-        emissive="#ff2a2a"
-        emissiveIntensity={0.10 + 1.05 * clamp01(strength)}
-        transparent
-        opacity={0.35}
-      />
-    </mesh>
-  );
-}
-
 function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetId }) {
   const tRef = useRef(0);
-  useFrame((_, dt) => { tRef.current += dt; });
+  useFrame((_, dt) => {
+    tRef.current += dt;
+  });
 
   const estrogenDrive = clamp01(((model?.genes?.ESR1 ?? 0) + (model?.genes?.ESR2 ?? 0)) / 200);
   const cytokineDrive = clamp01(((model?.mediators?.IL6 ?? 0) + (model?.mediators?.TNF ?? 0) + (model?.mediators?.IL1B ?? 0)) / 300);
   const prostDrive = clamp01(((model?.mediators?.PGE2 ?? 0) + (model?.mediators?.PGF2A ?? 0)) / 200);
   const angioDrive = clamp01((model?.outcomes?.angiogenesis ?? 0) / 100);
   const fibroDrive = clamp01((model?.outcomes?.fibrosis ?? 0) / 100);
-  const painDrive = clamp01((model?.outcomes?.pain ?? 0) / 100);
 
-  const pulse = 0.5 + 0.5 * Math.sin(tRef.current * (1.8 + 1.6 * estrogenDrive));
+  const pulse = 0.5 + 0.5 * Math.sin(tRef.current * (1.6 + 1.8 * estrogenDrive));
 
-  // receptor targets for particles
   const hormoneTargets = useMemo(() => [[1.95, 0.35, 0.2], [-1.85, -0.25, 0.3]], []);
   const cytokineTargets = useMemo(
     () => [
@@ -361,10 +326,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
     []
   );
 
-  // extra “arteries” appear more in hypoxia preset
   const arteryBoost = presetId === "hypoxic_lesion" ? 1.0 : 0.35;
-
-  // extra adhesions in fibrosis preset
   const adhesionBoost = presetId === "fibrotic_bias" ? 1.0 : 0.35;
 
   return (
@@ -381,11 +343,8 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
         <meshStandardMaterial color="#ffffff" transparent opacity={0.09} roughness={0.35} />
       </mesh>
 
-      {/* Pain halo */}
-      {visualFX && <PainHalo strength={painDrive} />}
-
       {/* Nucleus */}
-      <Clickable id="nucleus" label="Nucleus" selected={selectedId === "nucleus"} onSelect={onSelect} tooltipPos={[0.2, 0.25, 0.15]}>
+      <Clickable id="nucleus" label="Nucleus (Control Center)" selected={selectedId === "nucleus"} onSelect={onSelect} tooltipPos={[0.2, 0.25, 0.15]}>
         {({ hovered, selected }) => (
           <group>
             <mesh position={[0.2, 0.2, 0.1]}>
@@ -394,7 +353,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
                 color="#a78bfa"
                 roughness={0.35}
                 emissive="#ff2a2a"
-                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.nucleus, 0.08)}
+                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.nucleus, 0.06)}
                 transparent
                 opacity={0.95}
               />
@@ -405,14 +364,14 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
                 color="#c4b5fd"
                 roughness={0.4}
                 emissive="#ff2a2a"
-                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.nucleus, 0.06)}
+                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.nucleus, 0.05)}
               />
             </mesh>
           </group>
         )}
       </Clickable>
 
-      {/* ER network */}
+      {/* ER Network */}
       <Clickable id="er_network" label="Protein Factory (ER)" selected={selectedId === "er_network"} onSelect={onSelect} tooltipPos={[0.0, 0.95, -0.2]}>
         {({ hovered, selected }) => {
           const geom = useMemo(() => {
@@ -433,39 +392,18 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
           }, []);
 
           return (
-            <mesh geometry={geom} rotation={[0, tRef.current * 0.25, 0]}>
+            <mesh geometry={geom} rotation={[0, tRef.current * 0.22, 0]}>
               <meshStandardMaterial
                 color="#fca5a5"
                 roughness={0.35}
                 emissive="#ff2a2a"
-                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.er_network, 0.08) + 0.45 * cytokineDrive}
+                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.er_network, 0.05) + 0.45 * cytokineDrive}
                 transparent
                 opacity={0.88}
               />
             </mesh>
           );
         }}
-      </Clickable>
-
-      {/* Golgi */}
-      <Clickable id="golgi" label="Shipping Center (Golgi)" selected={selectedId === "golgi"} onSelect={onSelect} tooltipPos={[-0.55, -0.35, 0.7]}>
-        {({ hovered, selected }) => (
-          <group position={[-0.55, -0.35, 0.65]} rotation={[0.2, 0.6, 0]}>
-            {[0, 1, 2, 3].map((i) => (
-              <mesh key={i} position={[0, i * 0.12, 0]}>
-                <torusGeometry args={[0.38, 0.05, 16, 60, Math.PI * 1.2]} />
-                <meshStandardMaterial
-                  color="#fde68a"
-                  roughness={0.45}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.golgi, 0.08) + 0.35 * cytokineDrive}
-                  transparent
-                  opacity={0.95}
-                />
-              </mesh>
-            ))}
-          </group>
-        )}
       </Clickable>
 
       {/* Hormone receptors */}
@@ -479,58 +417,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
                   color="#f472b6"
                   roughness={0.25}
                   emissive="#ff2a2a"
-                  emissiveIntensity={0.2 + 1.2 * estrogenDrive * pulse + (hovered || selected ? 0.4 : 0)}
-                />
-              </mesh>
-            ))}
-            {visualFX && (
-              <>
-                <pointLight position={hormoneTargets[0]} intensity={0.7 * estrogenDrive * pulse} distance={2.4} color="#ff2a2a" />
-                <pointLight position={hormoneTargets[1]} intensity={0.7 * estrogenDrive * (0.85 + 0.15 * pulse)} distance={2.4} color="#ff2a2a" />
-              </>
-            )}
-          </group>
-        )}
-      </Clickable>
-
-      {/* Cytokine receptors (NEW clusters) */}
-      <Clickable id="cytokine_receptors" label="Immune Signal Receptors" selected={selectedId === "cytokine_receptors"} onSelect={onSelect} tooltipPos={[0.05, 2.25, 0.0]}>
-        {({ hovered, selected }) => (
-          <group>
-            {cytokineTargets.map((p, i) => (
-              <mesh key={i} position={p}>
-                <sphereGeometry args={[0.11, 24, 24]} />
-                <meshStandardMaterial
-                  color="#93c5fd"
-                  roughness={0.3}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={0.15 + 1.25 * cytokineDrive * (0.8 + 0.2 * pulse) + (hovered || selected ? 0.35 : 0)}
-                />
-              </mesh>
-            ))}
-            {visualFX && (
-              <pointLight position={[0.0, 2.05, 0.1]} intensity={0.55 * cytokineDrive * pulse} distance={2.6} color="#ff2a2a" />
-            )}
-          </group>
-        )}
-      </Clickable>
-
-      {/* Mitochondria */}
-      <Clickable id="mitochondria" label="Mitochondria" selected={selectedId === "mitochondria"} onSelect={onSelect} tooltipPos={[-0.85, 1.0, 0.7]}>
-        {({ hovered, selected }) => (
-          <group>
-            {[
-              { p: [-0.7, 0.85, 0.6], r: [0.2, 0.8, 0.1], s: [1.6, 0.9, 0.9] },
-              { p: [0.9, -0.8, -0.3], r: [0.4, 0.2, 0.3], s: [1.7, 0.95, 0.85] },
-              { p: [0.25, -1.2, 0.75], r: [0.2, 0.3, 0.2], s: [1.55, 0.95, 0.9] }
-            ].map((m, idx) => (
-              <mesh key={idx} position={m.p} rotation={m.r} scale={m.s}>
-                <sphereGeometry args={[0.22, 32, 32]} />
-                <meshStandardMaterial
-                  color="#f59e0b"
-                  roughness={0.55}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.mitochondria, 0.06)}
+                  emissiveIntensity={0.18 + 1.25 * estrogenDrive * pulse + (hovered || selected ? 0.35 : 0)}
                 />
               </mesh>
             ))}
@@ -538,22 +425,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
         )}
       </Clickable>
 
-      {/* Glycolysis */}
-      <Clickable id="glycolysis" label="Sugar Burn Mode" selected={selectedId === "glycolysis"} onSelect={onSelect} tooltipPos={[0.0, 1.55, -0.55]}>
-        {({ hovered, selected }) => (
-          <mesh position={[0.0, 1.35, -0.55]} rotation={[0.3, tRef.current * 0.6, 0]}>
-            <torusGeometry args={[0.36, 0.08, 16, 60]} />
-            <meshStandardMaterial
-              color="#22c55e"
-              roughness={0.35}
-              emissive="#ff2a2a"
-              emissiveIntensity={emissiveIntensity(hovered, selected, highlights.glycolysis, 0.06) + 0.55 * angioDrive}
-            />
-          </mesh>
-        )}
-      </Clickable>
-
-      {/* COX-2 / prostaglandins */}
+      {/* COX-2 / prostaglandins cluster */}
       <Clickable id="cox2" label="COX-2 → Prostaglandins" selected={selectedId === "cox2"} onSelect={onSelect} tooltipPos={[1.25, 1.05, 0.9]}>
         {({ hovered, selected }) => (
           <group>
@@ -569,7 +441,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
                   color="#fb7185"
                   roughness={0.25}
                   emissive="#ff2a2a"
-                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.cox2, 0.08) + 0.95 * prostDrive * pulse}
+                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.cox2, 0.06) + 0.95 * prostDrive * pulse}
                 />
               </mesh>
             ))}
@@ -577,53 +449,28 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
         )}
       </Clickable>
 
-      {/* Pain hotspots (NEW) */}
-      <Clickable id="pain_hotspots" label="Pain Hotspots" selected={selectedId === "pain_hotspots"} onSelect={onSelect} tooltipPos={[1.6, 0.2, 1.0]}>
-        {({ hovered, selected }) => (
-          <group>
-            {[
-              [1.55, 0.35, 1.05],
-              [1.35, 0.10, 0.95],
-              [1.75, 0.05, 0.80]
-            ].map((p, i) => (
-              <mesh key={i} position={p}>
-                <icosahedronGeometry args={[0.12, 0]} />
-                <meshStandardMaterial
-                  color="#ff2a2a"
-                  roughness={0.2}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={0.15 + 1.35 * painDrive * (0.7 + 0.3 * pulse) + (hovered || selected ? 0.35 : 0)}
-                  transparent
-                  opacity={0.95}
-                />
-              </mesh>
-            ))}
-          </group>
-        )}
-      </Clickable>
-
-      {/* Angiogenesis sprout */}
+      {/* Angiogenesis: main sprout */}
       <Clickable id="angiogenesis" label="Vessel Sprouting" selected={selectedId === "angiogenesis"} onSelect={onSelect} tooltipPos={[2.65, 0.15, 0.0]}>
         {() => (
           <group>
-            <VesselTube basePos={[2.05, -0.35, 0.05]} dir={[1.0, 1.0, 0.0]} growth={angioDrive} radius={0.09} color="#60a5fa" />
+            <VesselTube basePos={[2.0, -0.35, 0.05]} dir={[1.0, 1.0, 0.0]} growth={angioDrive} radius={0.09} color="#60a5fa" />
+            <VesselTube basePos={[2.05, -0.45, -0.25]} dir={[1.0, 0.9, 0.2]} growth={angioDrive * 0.75} radius={0.07} color="#60a5fa" />
           </group>
         )}
       </Clickable>
 
-      {/* Arteries nearby (NEW) */}
-      <Clickable id="arteries" label="Arteries Nearby" selected={selectedId === "arteries"} onSelect={onSelect} tooltipPos={[2.0, -1.0, -0.6]}>
+      {/* Arteries nearby (more obvious tubes) */}
+      <Clickable id="arteries" label="Nearby Arteries" selected={selectedId === "arteries"} onSelect={onSelect} tooltipPos={[1.9, -1.2, -0.6]}>
         {() => (
           <group>
-            {/* thicker “artery” tubes appear with hypoxia/angiogenesis */}
-            <VesselTube basePos={[1.85, -1.05, -0.55]} dir={[1.0, 0.6, 0.2]} growth={clamp01(angioDrive * arteryBoost)} radius={0.13} color="#ef4444" />
-            <VesselTube basePos={[1.65, -1.25, 0.55]} dir={[1.0, 0.7, -0.2]} growth={clamp01(angioDrive * arteryBoost * 0.9)} radius={0.12} color="#ef4444" />
-            <VesselTube basePos={[1.95, -0.85, 0.0]} dir={[1.0, 0.7, 0.0]} growth={clamp01(angioDrive * arteryBoost * 0.8)} radius={0.11} color="#ef4444" />
+            <VesselTube basePos={[1.7, -1.25, -0.65]} dir={[1.0, 0.55, 0.15]} growth={clamp01(angioDrive * arteryBoost)} radius={0.14} color="#ef4444" />
+            <VesselTube basePos={[1.55, -1.45, 0.55]} dir={[1.0, 0.65, -0.15]} growth={clamp01(angioDrive * arteryBoost * 0.9)} radius={0.13} color="#ef4444" />
+            <VesselTube basePos={[1.85, -1.05, 0.05]} dir={[1.0, 0.6, 0.0]} growth={clamp01(angioDrive * arteryBoost * 0.85)} radius={0.12} color="#ef4444" />
           </group>
         )}
       </Clickable>
 
-      {/* Fibrosis fibers */}
+      {/* Fibrosis / adhesions */}
       <Clickable id="fibrosis" label="Fibrosis / Collagen" selected={selectedId === "fibrosis"} onSelect={onSelect} tooltipPos={[-2.35, 0.1, 0.2]}>
         {({ hovered, selected }) => (
           <group scale={[0.8 + 2.0 * fibroDrive, 0.5 + 1.2 * fibroDrive, 0.8 + 2.0 * fibroDrive]}>
@@ -638,7 +485,7 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
                   color="#eab308"
                   roughness={0.78}
                   emissive="#ff2a2a"
-                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.fibrosis, 0.06) + 0.25 * fibroDrive}
+                  emissiveIntensity={emissiveIntensity(hovered, selected, highlights.fibrosis, 0.05) + 0.25 * fibroDrive}
                   transparent
                   opacity={0.95}
                 />
@@ -648,89 +495,13 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
         )}
       </Clickable>
 
-      {/* Adhesion scaffold (NEW) */}
       <Clickable id="adhesions" label="Adhesions / Scaffolding" selected={selectedId === "adhesions"} onSelect={onSelect} tooltipPos={[-2.9, -0.6, 0.4]}>
         {() => <AdhesionScaffold amount={clamp01(fibroDrive * adhesionBoost)} />}
-      </Clickable>
-
-      {/* Lysosomes + ribosomes (extra realism) */}
-      <Clickable id="lysosomes" label="Lysosomes (Recycling)" selected={selectedId === "lysosomes"} onSelect={onSelect} tooltipPos={[0.0, -0.2, -1.2]}>
-        {({ hovered, selected }) => (
-          <group>
-            {[[0.2, -0.4, -1.1], [-0.35, -0.15, -1.05], [0.0, -0.75, -0.95]].map((p, i) => (
-              <mesh key={i} position={p}>
-                <sphereGeometry args={[0.12, 18, 18]} />
-                <meshStandardMaterial
-                  color="#a7f3d0"
-                  roughness={0.5}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={emissiveIntensity(hovered, selected, false, 0.05)}
-                  transparent
-                  opacity={0.9}
-                />
-              </mesh>
-            ))}
-          </group>
-        )}
-      </Clickable>
-
-      <Clickable id="ribosomes" label="Ribosomes (Protein Builders)" selected={selectedId === "ribosomes"} onSelect={onSelect} tooltipPos={[-0.2, 1.2, 1.2]}>
-        {({ hovered, selected }) => (
-          <group>
-            {new Array(26).fill(0).map((_, i) => {
-              const a = i / 26 * Math.PI * 2;
-              const r = 1.55 + 0.15 * Math.sin(i);
-              const p = [Math.cos(a) * r, 0.6 + 0.35 * Math.sin(2 * a), Math.sin(a) * r];
-              return (
-                <mesh key={i} position={p} scale={[0.6, 0.6, 0.6]}>
-                  <sphereGeometry args={[0.06, 12, 12]} />
-                  <meshStandardMaterial
-                    color="#e5e7eb"
-                    roughness={0.6}
-                    emissive="#ff2a2a"
-                    emissiveIntensity={emissiveIntensity(hovered, selected, false, 0.03)}
-                    transparent
-                    opacity={0.8}
-                  />
-                </mesh>
-              );
-            })}
-          </group>
-        )}
-      </Clickable>
-
-      {/* Immune cell */}
-      <Clickable id="immune" label="Macrophage" selected={selectedId === "immune"} onSelect={onSelect} tooltipPos={[0.0, -2.75, 0.0]}>
-        {({ hovered, selected }) => (
-          <group position={[0.0, -2.65, 0.0]}>
-            <mesh>
-              <sphereGeometry args={[0.38, 32, 32]} />
-              <meshStandardMaterial
-                color="#93c5fd"
-                roughness={0.35}
-                emissive="#ff2a2a"
-                emissiveIntensity={emissiveIntensity(hovered, selected, highlights.immune, 0.06) + 0.95 * cytokineDrive * (0.7 + 0.3 * pulse)}
-              />
-            </mesh>
-            {[[0.35, 0.05, 0.0], [-0.32, -0.08, 0.15], [0.05, 0.28, -0.18]].map((p, i) => (
-              <mesh key={i} position={p} scale={[0.6, 0.6, 0.6]}>
-                <icosahedronGeometry args={[0.18, 0]} />
-                <meshStandardMaterial
-                  color="#93c5fd"
-                  roughness={0.35}
-                  emissive="#ff2a2a"
-                  emissiveIntensity={0.10 + 0.55 * cytokineDrive * pulse}
-                />
-              </mesh>
-            ))}
-          </group>
-        )}
       </Clickable>
 
       {/* Particle clouds */}
       {visualFX && (
         <>
-          {/* cytokines go to cytokine receptors */}
           <ParticleCloud
             enabled={true}
             origin={[0.0, -2.65, 0.0]}
@@ -739,11 +510,10 @@ function CellVisual({ model, highlights, selectedId, onSelect, visualFX, presetI
             baseColor={[0.65, 0.85, 1.0]}
             count={900}
           />
-          {/* prostaglandins go to pain hotspots + hormone receptors */}
           <ParticleCloud
             enabled={true}
             origin={[1.18, 0.88, 0.75]}
-            targets={[...hormoneTargets, [1.55, 0.35, 1.05], [1.35, 0.10, 0.95]]}
+            targets={[...hormoneTargets]}
             strength={prostDrive}
             baseColor={[1.0, 0.55, 0.65]}
             count={700}
@@ -760,6 +530,7 @@ export default function CellScene({ model, highlights, selectedId, onSelect, vis
       <ambientLight intensity={0.7} />
       <directionalLight position={[6, 8, 8]} intensity={1.2} />
       <pointLight position={[-6, -2, 6]} intensity={0.9} />
+
       <Stars radius={60} depth={30} count={700} factor={2} fade />
 
       <CellVisual
